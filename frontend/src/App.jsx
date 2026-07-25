@@ -7,6 +7,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Search from './pages/Search';
 import Requests from './pages/Requests';
+import FindRequests from './pages/FindRequests';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import NotFound from './pages/NotFound';
@@ -25,6 +26,14 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={['donor', 'hospital']}>
                 <Search />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/find-requests"
+            element={
+              <ProtectedRoute allowedRoles={['donor']}>
+                <FindRequests />
               </ProtectedRoute>
             }
           />

@@ -20,7 +20,7 @@ export default function Navbar() {
 
         <nav className="flex items-center gap-6 text-sm font-body">
           {user?.role === 'donor' && (
-            <Link to="/search" className="hover:text-blood transition-colors">Find Requests</Link>
+            <Link to="/find-requests" className="hover:text-blood transition-colors">Find Requests</Link>
           )}
           {user?.role === 'hospital' && (
             <>
