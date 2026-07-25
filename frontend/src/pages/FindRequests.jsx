@@ -14,6 +14,7 @@ export default function FindRequests() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [onlyMyGroup, setOnlyMyGroup] = useState(true);
+  const [respondingId, setRespondingId] = useState(null);
 
   const loadRequests = async () => {
     setLoading(true);
@@ -29,6 +30,19 @@ export default function FindRequests() {
   };
 
   useEffect(() => { loadRequests(); }, []);
+
+  const respondToRequest = async (id) => {
+    setError('');
+    setRespondingId(id);
+    try {
+      const { data } = await api.patch(`/requests/${id}/respond`);
+      setRequests((prev) => prev.map((r) => (r._id === id ? data : r)));
+    } catch (err) {
+      setError(err.response?.data?.message || 'Could not respond to this request.');
+    } finally {
+      setRespondingId(null);
+    }
+  };
 
   const visibleRequests = onlyMyGroup && user?.bloodGroup
     ? requests.filter((r) => r.bloodGroup === user.bloodGroup)
@@ -66,19 +80,38 @@ export default function FindRequests() {
               <p className="text-xs text-muted mt-1">Check back soon, or turn off the blood group filter above.</p>
             </div>
           )}
-          {visibleRequests.map((r) => (
-            <div key={r._id} className="bg-white border border-ink/10 rounded-lg p-4 flex items-center justify-between">
-              <div>
-                <p className="font-medium font-mono">{r.bloodGroup} · {r.unitsNeeded} unit{r.unitsNeeded > 1 ? 's' : ''}</p>
-                <p className="text-sm text-muted mt-1">{r.requestedBy?.name || 'Hospital'}{r.location?.address ? ` · ${r.location.address}` : ''}</p>
-                {r.requestedBy?.phone && (
-                  <p className="text-xs text-muted mt-0.5">{r.requestedBy.phone}</p>
-                )}
-                <p className="text-xs text-muted mt-1">{new Date(r.createdAt).toLocaleString()}</p>
+          {visibleRequests.map((r) => {
+            const isMatched = r.status === 'matched';
+            const matchedByMe = isMatched && r.respondedDonor?._id === user?._id;
+            return (
+              <div key={r._id} className="bg-white border border-ink/10 rounded-lg p-4 flex items-center justify-between gap-4">
+                <div>
+                  <p className="font-medium font-mono">{r.bloodGroup} · {r.unitsNeeded} unit{r.unitsNeeded > 1 ? 's' : ''}</p>
+                  <p className="text-sm text-muted mt-1">{r.requestedBy?.name || 'Hospital'}{r.location?.address ? ` · ${r.location.address}` : ''}</p>
+                  {r.requestedBy?.phone && (
+                    <p className="text-xs text-muted mt-0.5">{r.requestedBy.phone}</p>
+                  )}
+                  <p className="text-xs text-muted mt-1">{new Date(r.createdAt).toLocaleString()}</p>
+                </div>
+                <div className="flex flex-col items-end gap-2">
+                  <span className={`text-xs font-medium px-2 py-1 rounded capitalize h-fit ${URGENCY_STYLES[r.urgency]}`}>{r.urgency}</span>
+                  {isMatched ? (
+                    <span className="text-xs font-medium text-teal">
+                      {matchedByMe ? 'You responded ✓' : 'Already matched'}
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => respondToRequest(r._id)}
+                      disabled={respondingId === r._id}
+                      className="bg-blood hover:bg-blood-dark text-paper text-xs font-medium rounded px-3 py-1.5 transition-colors disabled:opacity-60"
+                    >
+                      {respondingId === r._id ? 'Responding...' : 'I can donate'}
+                    </button>
+                  )}
+                </div>
               </div>
-              <span className={`text-xs font-medium px-2 py-1 rounded capitalize h-fit ${URGENCY_STYLES[r.urgency]}`}>{r.urgency}</span>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

@@ -42,9 +42,43 @@ const getRequests = async (req, res) => {
     const requests = await BloodRequest.find(filter)
       .populate('requestedBy', 'name phone')
       .populate('fulfilledBy', 'name address')
+      .populate('respondedDonor', 'name phone')
       .sort({ urgency: -1, createdAt: -1 });
 
     res.json(requests);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// A donor volunteers to fulfil a pending request. Marks the request 'matched'
+// and records which donor responded, so the hospital can see who to contact.
+const respondToRequest = async (req, res) => {
+  try {
+    const request = await BloodRequest.findById(req.params.id);
+    if (!request) {
+      return res.status(404).json({ message: 'Request not found' });
+    }
+
+    if (request.status !== 'pending') {
+      return res.status(400).json({ message: 'This request is no longer pending' });
+    }
+
+    request.status = 'matched';
+    request.respondedDonor = req.user._id;
+    await request.save();
+
+    const populated = await request.populate([
+      { path: 'requestedBy', select: 'name phone' },
+      { path: 'respondedDonor', select: 'name phone' },
+    ]);
+
+    const io = getIO();
+    if (io) {
+      io.to('admin-room').emit('request:updated', populated);
+    }
+
+    res.json(populated);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -74,4 +108,4 @@ const updateRequestStatus = async (req, res) => {
   }
 };
 
-module.exports = { createRequest, getRequests, updateRequestStatus };
+module.exports = { createRequest, getRequests, respondToRequest, updateRequestStatus };

@@ -47,6 +47,13 @@ const bloodRequestSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'BloodBank',
     },
+    // Donor who volunteered to fulfil this request (separate from fulfilledBy,
+    // which tracks a BloodBank fulfilling it via stock).
+    respondedDonor: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
   },
   { timestamps: true }
 );
