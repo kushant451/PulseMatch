@@ -48,7 +48,7 @@ const registerUser = async (req, res) => {
       password: hashedPassword,
       role: role || 'donor',
       phone,
-      bloodGroup,
+      bloodGroup: bloodGroup || undefined,
       dateOfBirth,
       weightKg,
       location: {
